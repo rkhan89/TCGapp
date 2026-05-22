@@ -1,0 +1,15 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "client",
+      "runtimeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+      "runtimeArgs": ["node_modules\\vite\\bin\\vite.js"],
+      "port": 5173,
+      "cwd": "C:\\Users\\rkhan\\TCGapp\\client",
+      "env": {
+        "PATH": "C:\\Program Files\\nodejs;C:\\windows\\system32;C:\\windows"
+      }
+    }
+  ]
+}
