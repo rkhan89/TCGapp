@@ -44,8 +44,13 @@ export default function GradedPrices({ cardName, setName }: Props) {
       const data = await getGradedPrices(cardName, setName, company, grade);
       setResult(data);
       setFetched(true);
-    } catch {
-      setError('Could not fetch graded prices. Try again.');
+    } catch (err: any) {
+      const msg = err?.message ?? '';
+      if (msg.includes('503')) {
+        setError('eBay API key not set on server. Add EBAY_APP_ID to Railway variables.');
+      } else {
+        setError('Could not fetch graded prices. Try again.');
+      }
     } finally {
       setLoading(false);
     }

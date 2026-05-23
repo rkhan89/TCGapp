@@ -25,7 +25,7 @@ export async function getGradedPrices(
 ): Promise<GradedResult> {
   const params = new URLSearchParams({ name, setName, company, grade });
   const res = await fetch(`${BASE}/graded?${params}`);
-  if (!res.ok) throw new Error('Failed to fetch graded prices');
+  if (!res.ok) throw new Error(`${res.status}`);
   return res.json();
 }
 

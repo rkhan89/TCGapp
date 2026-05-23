@@ -4,7 +4,8 @@
       "PowerShell(if \\(-not $?\\) { \"Directory is empty or doesn't exist\" })",
       "PowerShell(Get-Command node -ErrorAction SilentlyContinue; Get-ChildItem \"C:\\\\Program Files\\\\nodejs\" -ErrorAction SilentlyContinue; Get-ChildItem \"$env:APPDATA\\\\npm\" -ErrorAction SilentlyContinue; Get-ChildItem \"$env:LOCALAPPDATA\\\\nvs\" -ErrorAction SilentlyContinue; Get-ChildItem \"$env:LOCALAPPDATA\\\\nvm\" -ErrorAction SilentlyContinue)",
       "Bash(npm --version)",
-      "PowerShell($env:PATH = $env:PATH + \";C:\\\\Program Files\\\\nodejs;$env:APPDATA\\\\npm\"; Set-Location \"C:\\\\Users\\\\rkhan\\\\TCGapp\\\\server\"; Start-Process powershell -ArgumentList \"-NoExit\", \"-Command\", \"`$env:PATH = `$env:PATH + ';C:\\\\Program Files\\\\nodejs;' + `$env:APPDATA + '\\\\npm'; Set-Location 'C:\\\\Users\\\\rkhan\\\\TCGapp\\\\server'; npx ts-node src/index.ts\" -WindowStyle Normal; Write-Host \"Server window launched\")"
+      "PowerShell($env:PATH = $env:PATH + \";C:\\\\Program Files\\\\nodejs;$env:APPDATA\\\\npm\"; Set-Location \"C:\\\\Users\\\\rkhan\\\\TCGapp\\\\server\"; Start-Process powershell -ArgumentList \"-NoExit\", \"-Command\", \"`$env:PATH = `$env:PATH + ';C:\\\\Program Files\\\\nodejs;' + `$env:APPDATA + '\\\\npm'; Set-Location 'C:\\\\Users\\\\rkhan\\\\TCGapp\\\\server'; npx ts-node src/index.ts\" -WindowStyle Normal; Write-Host \"Server window launched\")",
+      "mcp__Claude_Preview__preview_start"
     ]
   }
 }
