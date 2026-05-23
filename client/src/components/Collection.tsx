@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X, Trash2, ShoppingBag } from 'lucide-react';
 import type { CollectionItem } from '../types';
+import { useCurrency } from '../context/CurrencyContext';
 
 interface Props {
   items: CollectionItem[];
@@ -12,15 +13,12 @@ interface Props {
 const PRESETS = [50, 60, 70, 75, 80, 85, 90, 95];
 
 export default function Collection({ items, onToggleIncluded, onRemove, onClose }: Props) {
+  const { fmt } = useCurrency();
   const [percent, setPercent] = useState(80);
 
   const included = items.filter(i => i.included);
   const marketTotal = included.reduce((sum, i) => sum + (i.priceData.prices.market ?? 0), 0);
   const calcTotal = marketTotal * percent / 100;
-
-  const fmt = (n: number) => `$${n.toFixed(2)}`;
-  const fmtN = (n: number | null) => n == null ? '—' : `$${n.toFixed(2)}`;
-  const calcPrice = (market: number | null) => market == null ? null : market * percent / 100;
 
   return (
     <div
@@ -32,7 +30,6 @@ export default function Collection({ items, onToggleIncluded, onRemove, onClose 
         className="animate-fade-up"
         style={{ background: 'var(--surface)', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: 520, maxHeight: '88vh', display: 'flex', flexDirection: 'column', border: '1px solid var(--border)', borderBottom: 'none', overflow: 'hidden' }}
       >
-        {/* Handle */}
         <div style={{ width: 36, height: 4, background: 'var(--border)', borderRadius: 2, margin: '12px auto 0', flexShrink: 0 }} />
 
         {/* Header */}
@@ -56,35 +53,22 @@ export default function Collection({ items, onToggleIncluded, onRemove, onClose 
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 40, gap: 10 }}>
             <span style={{ fontSize: 40 }}>🃏</span>
             <p style={{ fontWeight: 700, fontSize: 16, color: 'var(--text)', margin: 0 }}>No cards yet</p>
-            <p style={{ fontSize: 14, color: 'var(--text2)', margin: 0, textAlign: 'center' }}>
-              Search for a card and tap "Add" to track your bulk buy total.
-            </p>
+            <p style={{ fontSize: 14, color: 'var(--text2)', margin: 0, textAlign: 'center' }}>Search for a card and tap "Add" to track your bulk buy total.</p>
           </div>
         )}
 
         {items.length > 0 && (
           <>
-            {/* % Calculator strip */}
+            {/* % strip */}
             <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', flexShrink: 0, background: 'var(--surface2)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Price %
-                </span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Price %</span>
                 <span style={{ fontSize: 20, fontWeight: 900, color: 'var(--text)', letterSpacing: '-0.5px' }}>{percent}%</span>
               </div>
-              <input
-                type="range" min="1" max="150" value={percent}
-                onChange={e => setPercent(Number(e.target.value))}
-                style={{ marginBottom: 10, background: 'var(--border)' }}
-              />
+              <input type="range" min="1" max="150" value={percent} onChange={e => setPercent(Number(e.target.value))} style={{ marginBottom: 10 }} />
               <div style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none' }}>
                 {PRESETS.map(p => (
-                  <button
-                    key={p}
-                    className={`pill${percent === p ? ' active' : ''}`}
-                    onClick={() => setPercent(p)}
-                    style={{ fontSize: 12, padding: '4px 11px', flexShrink: 0 }}
-                  >
+                  <button key={p} className={`pill${percent === p ? ' active' : ''}`} onClick={() => setPercent(p)} style={{ fontSize: 12, padding: '4px 11px', flexShrink: 0 }}>
                     {p}%
                   </button>
                 ))}
@@ -95,8 +79,7 @@ export default function Collection({ items, onToggleIncluded, onRemove, onClose 
             <div style={{ flex: 1, overflowY: 'auto' }}>
               {/* Column headers */}
               <div style={{ display: 'grid', gridTemplateColumns: '22px 38px 1fr auto auto auto', gap: 10, alignItems: 'center', padding: '8px 20px 6px', borderBottom: '1px solid var(--border)' }}>
-                <span />
-                <span />
+                <span /><span />
                 <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Card</span>
                 <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Market</span>
                 <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{percent}%</span>
@@ -105,12 +88,9 @@ export default function Collection({ items, onToggleIncluded, onRemove, onClose 
 
               {items.map(item => {
                 const market = item.priceData.prices.market;
-                const calc = calcPrice(market);
+                const calc = market != null ? market * percent / 100 : null;
                 return (
-                  <div
-                    key={item.id}
-                    style={{ display: 'grid', gridTemplateColumns: '22px 38px 1fr auto auto auto', gap: 10, alignItems: 'center', padding: '11px 20px', borderBottom: '1px solid var(--border)', opacity: item.included ? 1 : 0.4, transition: 'opacity 0.2s ease' }}
-                  >
+                  <div key={item.id} style={{ display: 'grid', gridTemplateColumns: '22px 38px 1fr auto auto auto', gap: 10, alignItems: 'center', padding: '11px 20px', borderBottom: '1px solid var(--border)', opacity: item.included ? 1 : 0.4, transition: 'opacity 0.2s ease' }}>
                     {/* Checkbox */}
                     <button
                       onClick={() => onToggleIncluded(item.id)}
@@ -123,30 +103,22 @@ export default function Collection({ items, onToggleIncluded, onRemove, onClose 
                       )}
                     </button>
 
-                    {/* Thumbnail */}
+                    {/* Thumb */}
                     <div style={{ width: 38, height: 52, borderRadius: 6, overflow: 'hidden', background: 'var(--surface2)', flexShrink: 0 }}>
                       <img src={item.card.imageUrl} alt={item.card.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </div>
 
                     {/* Name */}
                     <div style={{ minWidth: 0 }}>
-                      <p style={{ fontWeight: 600, fontSize: 13, color: 'var(--text)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {item.card.name}
-                      </p>
-                      <p style={{ fontSize: 11, color: 'var(--text3)', margin: '2px 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {item.card.setName}
-                      </p>
+                      <p style={{ fontWeight: 600, fontSize: 13, color: 'var(--text)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.card.name}</p>
+                      <p style={{ fontSize: 11, color: 'var(--text3)', margin: '2px 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.card.setName}</p>
                     </div>
 
-                    {/* Market price */}
-                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', textAlign: 'right', flexShrink: 0 }}>
-                      {fmtN(market)}
-                    </span>
+                    {/* Market */}
+                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', textAlign: 'right', flexShrink: 0 }}>{fmt(market)}</span>
 
-                    {/* Calculated price */}
-                    <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)', textAlign: 'right', flexShrink: 0, letterSpacing: '-0.3px' }}>
-                      {calc != null ? fmt(calc) : '—'}
-                    </span>
+                    {/* Calc */}
+                    <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)', textAlign: 'right', flexShrink: 0, letterSpacing: '-0.3px' }}>{fmt(calc)}</span>
 
                     {/* Remove */}
                     <button
@@ -162,23 +134,15 @@ export default function Collection({ items, onToggleIncluded, onRemove, onClose 
               })}
             </div>
 
-            {/* Total footer */}
-            <div style={{ padding: '14px 20px 32px', borderTop: '1px solid var(--border)', flexShrink: 0, background: 'var(--surface)' }}>
+            {/* Footer */}
+            <div style={{ padding: '14px 20px 32px', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                <span style={{ fontSize: 13, color: 'var(--text3)' }}>
-                  {included.length} of {items.length} cards · market total
-                </span>
-                <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text2)', letterSpacing: '-0.3px' }}>
-                  {fmt(marketTotal)}
-                </span>
+                <span style={{ fontSize: 13, color: 'var(--text3)' }}>{included.length} of {items.length} cards · market total</span>
+                <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text2)', letterSpacing: '-0.3px' }}>{fmt(marketTotal)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>Total at {percent}%</span>
-                </div>
-                <span style={{ fontSize: 34, fontWeight: 900, letterSpacing: '-1.2px', color: 'var(--text)' }}>
-                  {fmt(calcTotal)}
-                </span>
+                <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>Total at {percent}%</span>
+                <span style={{ fontSize: 34, fontWeight: 900, letterSpacing: '-1.2px', color: 'var(--text)' }}>{fmt(calcTotal)}</span>
               </div>
             </div>
           </>

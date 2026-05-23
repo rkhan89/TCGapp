@@ -1,7 +1,8 @@
 import { useState, useRef, useCallback } from 'react';
-import { Search, SlidersHorizontal, Camera, Star } from 'lucide-react';
+import { Search, Camera } from 'lucide-react';
 import type { SearchResult } from '../types';
 import { searchCards } from '../api';
+import { useCurrency } from '../context/CurrencyContext';
 
 const GAMES = [
   { value: 'all', label: 'All' },
@@ -27,6 +28,7 @@ export default function CardSearch({ onSelect, onScanClick, prefilledQuery }: Pr
   const [error, setError] = useState('');
   const [searched, setSearched] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { fmt } = useCurrency();
 
   const doSearch = useCallback(async (q: string, g: string) => {
     if (q.trim().length < 2) { setResults([]); setSearched(false); return; }
@@ -199,7 +201,7 @@ export default function CardSearch({ onSelect, onScanClick, prefilledQuery }: Pr
               <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
                 {card.marketPrice != null && (
                   <span style={{ fontWeight: 700, fontSize: 16, color: 'var(--text)', letterSpacing: '-0.3px' }}>
-                    ${card.marketPrice.toFixed(2)}
+                    {fmt(card.marketPrice)}
                   </span>
                 )}
                 <span style={{ fontSize: 12, color: 'var(--text3)' }}>→</span>
