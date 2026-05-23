@@ -26,6 +26,17 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
+// Proxy currency rates to avoid client-side CORS issues
+app.get('/api/rates', async (_req, res) => {
+  try {
+    const response = await fetch('https://api.frankfurter.app/latest?from=USD&to=GBP,AED');
+    const data = await response.json();
+    res.json(data);
+  } catch {
+    res.status(500).json({ error: 'Failed to fetch rates' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`TCGapp server running on http://localhost:${PORT}`);
 });

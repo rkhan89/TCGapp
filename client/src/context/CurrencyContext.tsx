@@ -29,7 +29,7 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('https://api.frankfurter.app/latest?from=USD&to=GBP,AED')
+    fetch(`${import.meta.env.VITE_API_URL ?? '/api'}/rates`)
       .then(r => r.json())
       .then(data => {
         if (data.rates) setRates(data.rates);
