@@ -12,6 +12,23 @@ export async function searchCards(query: string, game?: string): Promise<SearchR
   return data.results as SearchResult[];
 }
 
+export interface GradedResult {
+  avg: number | null;
+  low: number | null;
+  high: number | null;
+  count: number;
+  sales: { title: string; price: number; date: string }[];
+}
+
+export async function getGradedPrices(
+  name: string, setName: string, company: string, grade: string
+): Promise<GradedResult> {
+  const params = new URLSearchParams({ name, setName, company, grade });
+  const res = await fetch(`${BASE}/graded?${params}`);
+  if (!res.ok) throw new Error('Failed to fetch graded prices');
+  return res.json();
+}
+
 export async function getCardPrices(card: SearchResult): Promise<PriceData> {
   const params = new URLSearchParams();
   if (card.setId) params.set('setId', String(card.setId));

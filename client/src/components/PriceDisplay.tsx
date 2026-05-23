@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { ArrowLeft, ExternalLink, TrendingDown, TrendingUp, Minus, Plus, Check } from 'lucide-react';
 import type { PriceData } from '../types';
 import PriceCalculator from './PriceCalculator';
+import GradedPrices from './GradedPrices';
 import { useCurrency } from '../context/CurrencyContext';
 
 interface Props {
@@ -115,6 +116,10 @@ export default function PriceDisplay({ data, onBack, onAdd, isAdded }: Props) {
           </details>
         </div>
       )}
+
+      <div className="animate-fade-up stagger-3" style={{ marginBottom: 14 }}>
+        <GradedPrices cardName={data.name} setName={data.setName} />
+      </div>
 
       <div className="animate-fade-up stagger-3">
         <PriceCalculator prices={prices} salesStats={salesStats} />

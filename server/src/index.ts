@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import searchRouter from './routes/search';
 import pricesRouter from './routes/prices';
+import gradedRouter from './routes/graded';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -21,6 +22,7 @@ app.use(express.json());
 
 app.use('/api/search', searchRouter);
 app.use('/api/prices', pricesRouter);
+app.use('/api/graded', gradedRouter);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
