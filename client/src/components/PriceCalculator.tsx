@@ -15,13 +15,13 @@ export default function PriceCalculator({ prices, salesStats }: Props) {
   const [customBase, setCustomBase] = useState('');
   const [percent, setPercent] = useState(80);
 
-  const baseOptions: { key: BaseKey; label: string; value: number | null }[] = [
-    { key: 'market',    label: 'Market',   value: prices.market },
-    { key: 'salesAvg',  label: 'Avg Sale', value: salesStats?.avg ?? null },
-    { key: 'salesLow',  label: 'Low Sale', value: salesStats?.low ?? null },
-    { key: 'salesHigh', label: 'High Sale',value: salesStats?.high ?? null },
-    { key: 'custom',    label: 'Custom',   value: null },
-  ].filter(o => o.key === 'custom' || o.value != null);
+  const baseOptions = ([
+    { key: 'market' as BaseKey,    label: 'Market',    value: prices.market },
+    { key: 'salesAvg' as BaseKey,  label: 'Avg Sale',  value: salesStats?.avg ?? null },
+    { key: 'salesLow' as BaseKey,  label: 'Low Sale',  value: salesStats?.low ?? null },
+    { key: 'salesHigh' as BaseKey, label: 'High Sale', value: salesStats?.high ?? null },
+    { key: 'custom' as BaseKey,    label: 'Custom',    value: null },
+  ] as { key: BaseKey; label: string; value: number | null }[]).filter(o => o.key === 'custom' || o.value != null);
 
   // Custom input is always treated as USD then converted
   const baseValueUsd = useMemo(() => {
