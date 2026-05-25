@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Sun, Moon, ShoppingBag } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Sun, Moon, ShoppingBag, WifiOff, CloudDownload } from 'lucide-react';
 import CardSearch from './components/CardSearch';
 import PriceDisplay from './components/PriceDisplay';
 import CardScanner from './components/CardScanner';
@@ -8,6 +8,8 @@ import { CurrencyProvider, useCurrency, type Currency } from './context/Currency
 import { useLocalStorage } from './hooks/useLocalStorage';
 import type { SearchResult, PriceData, CollectionItem, BookmarkedCard } from './types';
 import { getCardPrices } from './api';
+import { getLastSaveTime, setLastSaveTime, formatAge } from './utils/offlineCache';
+import { mediumTap, lightTap, removePulse, successPattern } from './utils/haptic';
 import './index.css';
 
 type View = 'search' | 'prices';
@@ -37,10 +39,44 @@ function AppInner() {
   const [collection, setCollection] = useLocalStorage<CollectionItem[]>('tcg-collection', []);
   const [bookmarks, setBookmarks] = useLocalStorage<BookmarkedCard[]>('tcg-bookmarks', []);
   const [searchHistory, setSearchHistory] = useLocalStorage<string[]>('tcg-history', []);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [savingOffline, setSavingOffline] = useState(false);
+  const [lastSaved, setLastSaved] = useState<number | null>(getLastSaveTime);
+  const [saveProgress, setSaveProgress] = useState({ done: 0, total: 0 });
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
   }, [dark]);
+
+  useEffect(() => {
+    const on = () => setIsOnline(true);
+    const off = () => setIsOnline(false);
+    window.addEventListener('online', on);
+    window.addEventListener('offline', off);
+    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
+  }, []);
+
+  const handleSaveOffline = useCallback(async () => {
+    const cards = [
+      ...collection.map(i => i.card),
+      ...bookmarks.map(b => b.card),
+    ].filter((c, i, a) => a.findIndex(x => x.productId === c.productId) === i);
+
+    if (cards.length === 0) return;
+    setSavingOffline(true);
+    setSaveProgress({ done: 0, total: cards.length });
+    mediumTap();
+
+    for (let i = 0; i < cards.length; i++) {
+      try { await getCardPrices(cards[i]); } catch {}
+      setSaveProgress({ done: i + 1, total: cards.length });
+    }
+
+    setLastSaveTime();
+    setLastSaved(Date.now());
+    setSavingOffline(false);
+    successPattern();
+  }, [collection, bookmarks]);
 
   const addToHistory = (query: string) => {
     setSearchHistory(prev => {
@@ -87,6 +123,7 @@ function AppInner() {
 
   const handleAddToCollection = (card: SearchResult, data: PriceData) => {
     if (collection.some(i => i.card.productId === card.productId)) return;
+    mediumTap();
     setCollection(prev => [...prev, {
       id: `${card.productId}-${Date.now()}`,
       card, priceData: data, included: true, addedAt: Date.now(),
@@ -95,6 +132,7 @@ function AppInner() {
   };
 
   const handleToggleBookmark = (card: SearchResult) => {
+    lightTap();
     setBookmarks(prev => {
       const exists = prev.some(b => b.card.productId === card.productId);
       if (exists) return prev.filter(b => b.card.productId !== card.productId);
@@ -130,11 +168,42 @@ function AppInner() {
             {collection.length > 0 ? includedCount : null}
           </button>
 
+          {/* Save offline button */}
+          <button
+            onClick={handleSaveOffline}
+            disabled={savingOffline || (collection.length === 0 && bookmarks.length === 0)}
+            title={lastSaved ? `Saved ${formatAge(lastSaved)}` : 'Save prices for offline use'}
+            style={{
+              width: 34, height: 34, borderRadius: '50%',
+              background: lastSaved ? 'var(--surface2)' : 'var(--surface2)',
+              border: `1px solid ${savingOffline ? 'var(--accent)' : 'var(--border)'}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: (collection.length === 0 && bookmarks.length === 0) ? 'default' : 'pointer',
+              color: savingOffline ? 'var(--accent)' : lastSaved ? '#22c55e' : 'var(--text2)',
+              transition: 'all 0.2s ease', position: 'relative', opacity: (collection.length === 0 && bookmarks.length === 0) ? 0.4 : 1,
+            }}
+          >
+            {savingOffline
+              ? <span style={{ fontSize: 9, fontWeight: 800 }}>{saveProgress.done}/{saveProgress.total}</span>
+              : <CloudDownload size={15} />
+            }
+          </button>
+
           <button onClick={() => setDark(d => !d)} style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--surface2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text2)', transition: 'all 0.2s ease' }}>
             {dark ? <Sun size={15} /> : <Moon size={15} />}
           </button>
         </div>
       </header>
+
+      {/* Offline banner */}
+      {!isOnline && (
+        <div style={{ background: '#fef3c7', borderBottom: '1px solid #fde68a', padding: '8px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <WifiOff size={13} color="#92400e" />
+          <span style={{ fontSize: 13, fontWeight: 600, color: '#92400e' }}>
+            Offline{lastSaved ? ` · prices from ${formatAge(lastSaved)}` : ' · no cached prices'}
+          </span>
+        </div>
+      )}
 
       <main style={{ maxWidth: 520, margin: '0 auto', padding: '0 20px 40px' }}>
         {view === 'search' && (
@@ -176,10 +245,11 @@ function AppInner() {
       {showCollection && (
         <Collection
           items={collection}
-          onToggleIncluded={id => setCollection(prev => prev.map(i => i.id === id ? { ...i, included: !i.included } : i))}
-          onRemove={id => setCollection(prev => prev.filter(i => i.id !== id))}
+          onToggleIncluded={id => { lightTap(); setCollection(prev => prev.map(i => i.id === id ? { ...i, included: !i.included } : i)); }}
+          onRemove={id => { removePulse(); setCollection(prev => prev.filter(i => i.id !== id)); }}
           onUpdateQuantity={(id, qty) => setCollection(prev => prev.map(i => i.id === id ? { ...i, quantity: Math.max(1, qty) } : i))}
           onSetCustomPrice={(id, price) => setCollection(prev => prev.map(i => i.id === id ? { ...i, customPrice: price } : i))}
+          onUpdateNotes={(id, notes) => setCollection(prev => prev.map(i => i.id === id ? { ...i, notes } : i))}
           onClose={() => setShowCollection(false)}
         />
       )}

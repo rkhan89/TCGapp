@@ -9,12 +9,13 @@ interface Props {
   onRemove: (id: string) => void;
   onUpdateQuantity: (id: string, qty: number) => void;
   onSetCustomPrice: (id: string, price: number | undefined) => void;
+  onUpdateNotes: (id: string, notes: string) => void;
   onClose: () => void;
 }
 
 const PRESETS = [50, 60, 70, 75, 80, 85, 90, 95];
 
-export default function Collection({ items, onToggleIncluded, onRemove, onUpdateQuantity, onSetCustomPrice, onClose }: Props) {
+export default function Collection({ items, onToggleIncluded, onRemove, onUpdateQuantity, onSetCustomPrice, onUpdateNotes, onClose }: Props) {
   const { fmt } = useCurrency();
   const [percent, setPercent] = useState(80);
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
@@ -164,6 +165,24 @@ export default function Collection({ items, onToggleIncluded, onRemove, onUpdate
                         <Trash2 size={12} />
                       </button>
                     </div>
+
+                    {/* Notes */}
+                    <input
+                      type="text"
+                      value={item.notes ?? ''}
+                      onChange={e => onUpdateNotes(item.id, e.target.value)}
+                      placeholder="Add a note… e.g. seller wants £40, mint"
+                      style={{
+                        width: '100%', marginTop: 8,
+                        background: 'transparent', border: 'none',
+                        borderBottom: `1px solid ${item.notes ? 'var(--accent)' : 'var(--border)'}`,
+                        padding: '4px 0', fontSize: 12,
+                        color: item.notes ? 'var(--text)' : 'var(--text3)',
+                        outline: 'none', transition: 'border-color 0.2s',
+                      }}
+                      onFocus={e => (e.target.style.borderBottomColor = 'var(--accent)')}
+                      onBlur={e => (e.target.style.borderBottomColor = item.notes ? 'var(--accent)' : 'var(--border)')}
+                    />
                   </div>
                 );
               })}

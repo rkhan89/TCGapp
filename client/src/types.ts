@@ -47,6 +47,7 @@ export interface CollectionItem {
   addedAt: number;
   quantity: number;
   customPrice?: number;
+  notes?: string;
 }
 
 export interface BookmarkedCard {
