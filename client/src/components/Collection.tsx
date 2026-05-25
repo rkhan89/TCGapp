@@ -127,29 +127,28 @@ export default function Collection({ items, onToggleIncluded, onRemove, onUpdate
                       {/* Price column */}
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
                         {isEditing ? (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                            <span style={{ fontSize: 11, color: 'var(--text3)' }}>$</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                             <input type="number" min="0" step="0.01" value={editingPriceValue}
                               onChange={e => setEditingPriceValue(e.target.value)}
                               onKeyDown={e => { if (e.key === 'Enter') commitEditPrice(item.id); if (e.key === 'Escape') setEditingPriceId(null); }}
                               autoFocus
-                              style={{ width: 56, background: 'var(--surface2)', border: '1px solid var(--accent)', borderRadius: 6, padding: '3px 5px', fontSize: 12, color: 'var(--text)', outline: 'none' }} />
+                              style={{ width: 70, background: 'var(--surface2)', border: '1.5px solid var(--accent)', borderRadius: 8, padding: '5px 8px', fontSize: 13, fontWeight: 700, color: 'var(--text)', outline: 'none', textAlign: 'right' }} />
                             <button onClick={() => commitEditPrice(item.id)}
-                              style={{ background: 'var(--accent)', border: 'none', borderRadius: 4, width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                              <Check size={10} color="var(--accent-fg)" />
+                              style={{ background: 'var(--accent)', border: 'none', borderRadius: 6, width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+                              <Check size={12} color="var(--accent-fg)" />
                             </button>
                           </div>
                         ) : (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                            <span style={{ fontSize: 13, fontWeight: 600, color: hasCustom ? 'var(--accent)' : 'var(--text2)' }}>{fmt(basePrice)}</span>
-                            <button onClick={() => startEditPrice(item)} title="Set custom price"
-                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', padding: 2, display: 'flex' }}>
-                              <Pencil size={10} />
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+                            <button onClick={() => startEditPrice(item)}
+                              style={{ background: hasCustom ? 'rgba(99,102,241,0.1)' : 'var(--surface2)', border: `1px solid ${hasCustom ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 8, padding: '4px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, transition: 'all 0.15s' }}>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: hasCustom ? 'var(--accent)' : 'var(--text2)' }}>{fmt(basePrice)}</span>
+                              <Pencil size={10} color={hasCustom ? 'var(--accent)' : 'var(--text3)'} />
                             </button>
                             {hasCustom && (
-                              <button onClick={() => onSetCustomPrice(item.id, undefined)} title="Reset to market"
-                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', padding: 2, display: 'flex' }}>
-                                <X size={10} />
+                              <button onClick={() => onSetCustomPrice(item.id, undefined)}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', fontSize: 10, padding: '0 2px' }}>
+                                reset
                               </button>
                             )}
                           </div>
