@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
-import { ArrowLeft, ExternalLink, TrendingDown, TrendingUp, Minus, Plus, Check } from 'lucide-react';
+import { ArrowLeft, ExternalLink, TrendingDown, TrendingUp, Minus, Plus, Check, Bookmark } from 'lucide-react';
 import type { PriceData } from '../types';
 import PriceCalculator from './PriceCalculator';
 import GradedPrices from './GradedPrices';
+import PriceTrendChart from './PriceTrendChart';
 import { useCurrency } from '../context/CurrencyContext';
 
 interface Props {
@@ -10,9 +11,11 @@ interface Props {
   onBack: () => void;
   onAdd: () => void;
   isAdded: boolean;
+  isBookmarked: boolean;
+  onToggleBookmark: () => void;
 }
 
-export default function PriceDisplay({ data, onBack, onAdd, isAdded }: Props) {
+export default function PriceDisplay({ data, onBack, onAdd, isAdded, isBookmarked, onToggleBookmark }: Props) {
   const { fmt } = useCurrency();
   const { prices, recentSales } = data;
 
@@ -49,9 +52,15 @@ export default function PriceDisplay({ data, onBack, onAdd, isAdded }: Props) {
         <div style={{ padding: '20px 20px 18px' }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 4 }}>
             <h2 style={{ fontSize: 21, fontWeight: 800, letterSpacing: '-0.5px', margin: 0, color: 'var(--text)', lineHeight: 1.2 }}>{data.name}</h2>
-            <button onClick={onAdd} disabled={isAdded} style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5, padding: '8px 14px', borderRadius: 999, border: 'none', background: isAdded ? 'var(--surface2)' : 'var(--accent)', color: isAdded ? 'var(--text3)' : 'var(--accent-fg)', fontSize: 13, fontWeight: 700, cursor: isAdded ? 'default' : 'pointer', transition: 'all 0.2s ease', whiteSpace: 'nowrap' }}>
-              {isAdded ? <><Check size={13} /> Added</> : <><Plus size={13} /> Add</>}
-            </button>
+            <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+              <button onClick={onToggleBookmark} title={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
+                style={{ width: 36, height: 36, borderRadius: 999, border: '1px solid var(--border)', background: isBookmarked ? 'var(--accent)' : 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s ease' }}>
+                <Bookmark size={14} fill={isBookmarked ? 'var(--accent-fg)' : 'none'} color={isBookmarked ? 'var(--accent-fg)' : 'var(--text2)'} />
+              </button>
+              <button onClick={onAdd} disabled={isAdded} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '8px 14px', borderRadius: 999, border: 'none', background: isAdded ? 'var(--surface2)' : 'var(--accent)', color: isAdded ? 'var(--text3)' : 'var(--accent-fg)', fontSize: 13, fontWeight: 700, cursor: isAdded ? 'default' : 'pointer', transition: 'all 0.2s ease', whiteSpace: 'nowrap' }}>
+                {isAdded ? <><Check size={13} /> Added</> : <><Plus size={13} /> Add</>}
+              </button>
+            </div>
           </div>
           <p style={{ color: 'var(--text2)', fontSize: 14, margin: '0 0 12px' }}>{data.setName}</p>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
@@ -114,6 +123,12 @@ export default function PriceDisplay({ data, onBack, onAdd, isAdded }: Props) {
               ))}
             </div>
           </details>
+        </div>
+      )}
+
+      {recentSales.length >= 2 && (
+        <div className="animate-fade-up stagger-2" style={{ marginBottom: 14 }}>
+          <PriceTrendChart sales={recentSales} />
         </div>
       )}
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Trash2, ShoppingBag } from 'lucide-react';
+import { X, Trash2, ShoppingBag, Pencil, Check } from 'lucide-react';
 import type { CollectionItem } from '../types';
 import { useCurrency } from '../context/CurrencyContext';
 
@@ -7,29 +7,44 @@ interface Props {
   items: CollectionItem[];
   onToggleIncluded: (id: string) => void;
   onRemove: (id: string) => void;
+  onUpdateQuantity: (id: string, qty: number) => void;
+  onSetCustomPrice: (id: string, price: number | undefined) => void;
   onClose: () => void;
 }
 
 const PRESETS = [50, 60, 70, 75, 80, 85, 90, 95];
 
-export default function Collection({ items, onToggleIncluded, onRemove, onClose }: Props) {
+export default function Collection({ items, onToggleIncluded, onRemove, onUpdateQuantity, onSetCustomPrice, onClose }: Props) {
   const { fmt } = useCurrency();
   const [percent, setPercent] = useState(80);
+  const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
+  const [editingPriceValue, setEditingPriceValue] = useState('');
 
   const included = items.filter(i => i.included);
-  const marketTotal = included.reduce((sum, i) => sum + (i.priceData.prices.market ?? 0), 0);
-  const calcTotal = marketTotal * percent / 100;
+  const baseTotal = included.reduce((sum, i) => {
+    const price = i.customPrice ?? i.priceData.prices.market ?? 0;
+    return sum + price * i.quantity;
+  }, 0);
+  const calcTotal = baseTotal * percent / 100;
+
+  const startEditPrice = (item: CollectionItem) => {
+    setEditingPriceId(item.id);
+    setEditingPriceValue(String(item.customPrice ?? item.priceData.prices.market ?? ''));
+  };
+
+  const commitEditPrice = (id: string) => {
+    const val = parseFloat(editingPriceValue);
+    if (!isNaN(val) && val > 0) onSetCustomPrice(id, val);
+    setEditingPriceId(null);
+  };
 
   return (
-    <div
-      className="animate-fade-in"
+    <div className="animate-fade-in"
       style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)', zIndex: 50, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
-      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div
-        className="animate-fade-up"
-        style={{ background: 'var(--surface)', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: 520, maxHeight: '88vh', display: 'flex', flexDirection: 'column', border: '1px solid var(--border)', borderBottom: 'none', overflow: 'hidden' }}
-      >
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="animate-fade-up"
+        style={{ background: 'var(--surface)', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: 520, maxHeight: '88vh', display: 'flex', flexDirection: 'column', border: '1px solid var(--border)', borderBottom: 'none', overflow: 'hidden' }}>
+
         <div style={{ width: 36, height: 4, background: 'var(--border)', borderRadius: 2, margin: '12px auto 0', flexShrink: 0 }} />
 
         {/* Header */}
@@ -68,67 +83,88 @@ export default function Collection({ items, onToggleIncluded, onRemove, onClose 
               <input type="range" min="1" max="150" value={percent} onChange={e => setPercent(Number(e.target.value))} style={{ marginBottom: 10 }} />
               <div style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none' }}>
                 {PRESETS.map(p => (
-                  <button key={p} className={`pill${percent === p ? ' active' : ''}`} onClick={() => setPercent(p)} style={{ fontSize: 12, padding: '4px 11px', flexShrink: 0 }}>
-                    {p}%
-                  </button>
+                  <button key={p} className={`pill${percent === p ? ' active' : ''}`} onClick={() => setPercent(p)} style={{ fontSize: 12, padding: '4px 11px', flexShrink: 0 }}>{p}%</button>
                 ))}
               </div>
             </div>
 
             {/* Card list */}
             <div style={{ flex: 1, overflowY: 'auto' }}>
-              {/* Column headers */}
-              <div style={{ display: 'grid', gridTemplateColumns: '22px 38px 1fr auto auto auto', gap: 10, alignItems: 'center', padding: '8px 20px 6px', borderBottom: '1px solid var(--border)' }}>
-                <span /><span />
-                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Card</span>
-                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Market</span>
-                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{percent}%</span>
-                <span />
-              </div>
-
               {items.map(item => {
-                const market = item.priceData.prices.market;
-                const calc = market != null ? market * percent / 100 : null;
+                const basePrice = item.customPrice ?? item.priceData.prices.market;
+                const unitCalc = basePrice != null ? basePrice * percent / 100 : null;
+                const rowTotal = unitCalc != null ? unitCalc * item.quantity : null;
+                const isEditing = editingPriceId === item.id;
+                const hasCustom = item.customPrice != null;
+
                 return (
-                  <div key={item.id} style={{ display: 'grid', gridTemplateColumns: '22px 38px 1fr auto auto auto', gap: 10, alignItems: 'center', padding: '11px 20px', borderBottom: '1px solid var(--border)', opacity: item.included ? 1 : 0.4, transition: 'opacity 0.2s ease' }}>
-                    {/* Checkbox */}
-                    <button
-                      onClick={() => onToggleIncluded(item.id)}
-                      style={{ width: 22, height: 22, borderRadius: 6, border: `2px solid ${item.included ? 'var(--accent)' : 'var(--border)'}`, background: item.included ? 'var(--accent)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.15s ease', flexShrink: 0 }}
-                    >
-                      {item.included && (
-                        <svg width="11" height="8" viewBox="0 0 11 8" fill="none">
-                          <path d="M1 4L4 7L10 1" stroke="var(--accent-fg)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      )}
-                    </button>
+                  <div key={item.id} style={{ padding: '12px 20px', borderBottom: '1px solid var(--border)', opacity: item.included ? 1 : 0.4, transition: 'opacity 0.2s ease' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      {/* Checkbox */}
+                      <button onClick={() => onToggleIncluded(item.id)}
+                        style={{ width: 22, height: 22, borderRadius: 6, border: `2px solid ${item.included ? 'var(--accent)' : 'var(--border)'}`, background: item.included ? 'var(--accent)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.15s ease', flexShrink: 0 }}>
+                        {item.included && <svg width="11" height="8" viewBox="0 0 11 8" fill="none"><path d="M1 4L4 7L10 1" stroke="var(--accent-fg)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                      </button>
 
-                    {/* Thumb */}
-                    <div style={{ width: 38, height: 52, borderRadius: 6, overflow: 'hidden', background: 'var(--surface2)', flexShrink: 0 }}>
-                      <img src={item.card.imageUrl} alt={item.card.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      {/* Thumb */}
+                      <div style={{ width: 38, height: 52, borderRadius: 6, overflow: 'hidden', background: 'var(--surface2)', flexShrink: 0 }}>
+                        <img src={item.card.imageUrl} alt={item.card.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      </div>
+
+                      {/* Name + qty controls */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontWeight: 600, fontSize: 13, color: 'var(--text)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.card.name}</p>
+                        <p style={{ fontSize: 11, color: 'var(--text3)', margin: '2px 0 6px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.card.setName}</p>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <button onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
+                            style={{ width: 22, height: 22, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>−</button>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', minWidth: 18, textAlign: 'center' }}>{item.quantity}</span>
+                          <button onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
+                            style={{ width: 22, height: 22, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text2)', fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>+</button>
+                        </div>
+                      </div>
+
+                      {/* Price column */}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
+                        {isEditing ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                            <span style={{ fontSize: 11, color: 'var(--text3)' }}>$</span>
+                            <input type="number" min="0" step="0.01" value={editingPriceValue}
+                              onChange={e => setEditingPriceValue(e.target.value)}
+                              onKeyDown={e => { if (e.key === 'Enter') commitEditPrice(item.id); if (e.key === 'Escape') setEditingPriceId(null); }}
+                              autoFocus
+                              style={{ width: 56, background: 'var(--surface2)', border: '1px solid var(--accent)', borderRadius: 6, padding: '3px 5px', fontSize: 12, color: 'var(--text)', outline: 'none' }} />
+                            <button onClick={() => commitEditPrice(item.id)}
+                              style={{ background: 'var(--accent)', border: 'none', borderRadius: 4, width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                              <Check size={10} color="var(--accent-fg)" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                            <span style={{ fontSize: 13, fontWeight: 600, color: hasCustom ? 'var(--accent)' : 'var(--text2)' }}>{fmt(basePrice)}</span>
+                            <button onClick={() => startEditPrice(item)} title="Set custom price"
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', padding: 2, display: 'flex' }}>
+                              <Pencil size={10} />
+                            </button>
+                            {hasCustom && (
+                              <button onClick={() => onSetCustomPrice(item.id, undefined)} title="Reset to market"
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', padding: 2, display: 'flex' }}>
+                                <X size={10} />
+                              </button>
+                            )}
+                          </div>
+                        )}
+                        <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.3px' }}>{fmt(rowTotal)}</span>
+                      </div>
+
+                      {/* Remove */}
+                      <button onClick={() => onRemove(item.id)}
+                        style={{ width: 28, height: 28, borderRadius: 7, background: 'transparent', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text3)', transition: 'all 0.15s ease', flexShrink: 0 }}
+                        onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = '#fef2f2'; el.style.borderColor = '#fecaca'; el.style.color = '#ef4444'; }}
+                        onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'transparent'; el.style.borderColor = 'var(--border)'; el.style.color = 'var(--text3)'; }}>
+                        <Trash2 size={12} />
+                      </button>
                     </div>
-
-                    {/* Name */}
-                    <div style={{ minWidth: 0 }}>
-                      <p style={{ fontWeight: 600, fontSize: 13, color: 'var(--text)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.card.name}</p>
-                      <p style={{ fontSize: 11, color: 'var(--text3)', margin: '2px 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.card.setName}</p>
-                    </div>
-
-                    {/* Market */}
-                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', textAlign: 'right', flexShrink: 0 }}>{fmt(market)}</span>
-
-                    {/* Calc */}
-                    <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)', textAlign: 'right', flexShrink: 0, letterSpacing: '-0.3px' }}>{fmt(calc)}</span>
-
-                    {/* Remove */}
-                    <button
-                      onClick={() => onRemove(item.id)}
-                      style={{ width: 28, height: 28, borderRadius: 7, background: 'transparent', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text3)', transition: 'all 0.15s ease', flexShrink: 0 }}
-                      onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = '#fef2f2'; el.style.borderColor = '#fecaca'; el.style.color = '#ef4444'; }}
-                      onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'transparent'; el.style.borderColor = 'var(--border)'; el.style.color = 'var(--text3)'; }}
-                    >
-                      <Trash2 size={12} />
-                    </button>
                   </div>
                 );
               })}
@@ -137,8 +173,8 @@ export default function Collection({ items, onToggleIncluded, onRemove, onClose 
             {/* Footer */}
             <div style={{ padding: '14px 20px 32px', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                <span style={{ fontSize: 13, color: 'var(--text3)' }}>{included.length} of {items.length} cards · market total</span>
-                <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text2)', letterSpacing: '-0.3px' }}>{fmt(marketTotal)}</span>
+                <span style={{ fontSize: 13, color: 'var(--text3)' }}>{included.length} of {items.length} cards · base total</span>
+                <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text2)', letterSpacing: '-0.3px' }}>{fmt(baseTotal)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>Total at {percent}%</span>

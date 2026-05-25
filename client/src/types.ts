@@ -45,4 +45,11 @@ export interface CollectionItem {
   priceData: PriceData;
   included: boolean;
   addedAt: number;
+  quantity: number;
+  customPrice?: number;
+}
+
+export interface BookmarkedCard {
+  card: SearchResult;
+  bookmarkedAt: number;
 }
