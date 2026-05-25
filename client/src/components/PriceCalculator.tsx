@@ -2,6 +2,11 @@ import { useState, useMemo } from 'react';
 import { Tag } from 'lucide-react';
 import { useCurrency } from '../context/CurrencyContext';
 
+// Formats an integer number of cents as a display string e.g. 1000 → "10.00"
+function centsToDisplay(cents: number): string {
+  return (cents / 100).toFixed(2);
+}
+
 interface Props {
   prices: { market: number | null; low: number | null; mid: number | null; high: number | null; directLow: number | null; };
   salesStats: { avg: number; low: number; high: number } | null;
@@ -13,7 +18,7 @@ const PRESETS = [50, 60, 70, 75, 80, 85, 90, 95];
 export default function PriceCalculator({ prices, salesStats }: Props) {
   const { fmt, currency } = useCurrency();
   const [baseKey, setBaseKey] = useState<BaseKey>('market');
-  const [customBase, setCustomBase] = useState('');
+  const [customCents, setCustomCents] = useState(0);
   const [percent, setPercent] = useState(80);
 
   const baseOptions = ([
@@ -25,9 +30,9 @@ export default function PriceCalculator({ prices, salesStats }: Props) {
   ] as { key: BaseKey; label: string; value: number | null }[]).filter(o => o.key === 'custom' || o.value != null);
 
   const baseValueUsd = useMemo(() => {
-    if (baseKey === 'custom') return parseFloat(customBase) || null;
+    if (baseKey === 'custom') return customCents > 0 ? customCents / 100 : null;
     return baseOptions.find(o => o.key === baseKey)?.value ?? null;
-  }, [baseKey, customBase, baseOptions]);
+  }, [baseKey, customCents, baseOptions]);
 
   const result = baseValueUsd != null ? (baseValueUsd * percent) / 100 : null;
 
@@ -67,22 +72,31 @@ export default function PriceCalculator({ prices, salesStats }: Props) {
             fontSize: 14, pointerEvents: 'none', fontWeight: 600,
           }}>{sym}</span>
           <input
-            type="number" min="0" step="0.01"
-            value={customBase}
-            onChange={e => { setCustomBase(e.target.value); setBaseKey('custom'); }}
-            onClick={e => e.stopPropagation()}
-            placeholder="0.00"
+            type="text"
+            inputMode="numeric"
+            value={centsToDisplay(customCents)}
+            onClick={e => { e.stopPropagation(); setBaseKey('custom'); }}
+            onFocus={() => setBaseKey('custom')}
+            onKeyDown={e => {
+              e.preventDefault();
+              if (e.key >= '0' && e.key <= '9') {
+                setCustomCents(prev => Math.min(prev * 10 + parseInt(e.key), 9999999));
+                setBaseKey('custom');
+              } else if (e.key === 'Backspace') {
+                setCustomCents(prev => Math.floor(prev / 10));
+              }
+            }}
+            readOnly={false}
             style={{
-              width: 90,
+              width: 100,
               background: baseKey === 'custom' ? 'rgba(255,255,255,0.15)' : 'var(--surface)',
               border: `1px solid ${baseKey === 'custom' ? 'rgba(255,255,255,0.3)' : 'var(--border)'}`,
               borderRadius: 8,
               padding: `8px 8px 8px ${sym.length > 1 ? '44px' : '24px'}`,
               fontSize: 14, fontWeight: 700,
               color: baseKey === 'custom' ? 'var(--accent-fg)' : 'var(--text)',
-              outline: 'none',
+              outline: 'none', cursor: 'text',
             }}
-            onFocus={() => setBaseKey('custom')}
           />
         </div>
       </div>
